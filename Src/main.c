@@ -68,7 +68,8 @@ static void MX_USART6_UART_Init(void);
     #if 1
     PUTCHAR_PROTOTYPE
     {
-      HAL_UART_Transmit(&huart1, (uint8_t *)&ch, 1, 0xFFFF);
+	  HAL_UART_Transmit(&huart6, (uint8_t *)&ch, 1, 0xFFFF);
+	  HAL_UART_Transmit(&huart1, (uint8_t *)&ch, 1, 0xFFFF);
       return ch;
     }
 	
@@ -93,58 +94,83 @@ static void MX_USART6_UART_Init(void);
 	
 	
 #define UART_RX_BUF_SIZE    127
-volatile uint8_t data;
+//volatile uint8_t data;
+//volatile uint8_t data6;	
+uint8_t RxBuf1[UART_RX_BUF_SIZE];
+uint8_t RxBuf2[UART_RX_BUF_SIZE];
 volatile uint8_t uart_buffer[UART_RX_BUF_SIZE+1];
 volatile int  uart_index=0;
- 
+ uint8_t *rxBuf;
+  uint8_t test[4] = "TEST";
+uint8_t flag_rx = 0;
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+#if 1
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
-    if(huart->Instance == huart1.Instance){
-		if(uart_index >= UART_RX_BUF_SIZE) {
-			HAL_UART_Receive_IT(&huart1, (uint8_t*) &data, 1);
-			return;
-		}
+    if(huart->Instance == USART1){
+	//	if(uart_index >= UART_RX_BUF_SIZE) {
+			HAL_UART_Receive_IT(&huart1, (uint8_t*) RxBuf1, 1);
+			//return;
+	//	}
 	}
-	else if(huart->Instance == huart6.Instance){
-		if(uart_index >= UART_RX_BUF_SIZE) {
-			HAL_UART_Receive_IT(&huart6, (uint8_t*) &data, 1);
-			return;
-		}
+	else if(huart->Instance == USART6){
+	//	if(uart_index >= UART_RX_BUF_SIZE) {
+			HAL_UART_Receive_IT(&huart6, (uint8_t*) RxBuf2, 1);
+		//	return;
+	//	}
 	}
     // linux,mac,win
-    if(data == '\r')
-        data = '\n';
+	
+    if(*RxBuf1 == '\r')
+        *RxBuf1 = '\n';
+    if(*RxBuf2 == '\r')
+        *RxBuf2 = '\n';
     
-    if(huart->Instance == huart1.Instance){
-        uart_buffer[uart_index++] = data;
-        uart_buffer[uart_index] = '\0';
+    if(huart->Instance == USART1){
+        uart_buffer[uart_index++] = *RxBuf1;
+      //  uart_buffer[uart_index] = '\0';
         
-        HAL_UART_Transmit(&huart6, (uint8_t*) &data, 1, 1);
+        //HAL_UART_Transmit(&huart6, (uint8_t*) &data, 1, 1);
          
 		//HAL_UART_Receive_IT(&huart1, (uint8_t*) &data, 1);
         // echo windows pc
-        if(data == '\n') {
+        if(*RxBuf1 == '\n') {
             char sr = '\r';
           //  HAL_UART_Transmit(&huart1, (uint8_t*) &data, 1, 1);
-			HAL_UART_Transmit(&huart6, (uint8_t*) &data, 1, 1);
+			HAL_UART_Transmit_IT(&huart6, (uint8_t*) RxBuf1, 1);
 			
 			HAL_GPIO_TogglePin(GPIOB,LED0_Pin);
         }
 //        HAL_UART_Receive_IT(&huart6, (uint8_t*) &sr, 1);
-//		HAL_UART_Receive_IT(&huart1, (uint8_t*) &sr, 1);
+		//HAL_UART_Receive_IT(&huart1, (uint8_t*) &data, 2);
     }
-	if(huart->Instance == huart6.Instance){
-		uart_buffer[uart_index++] = data;
-        uart_buffer[uart_index] = '\0';
-		HAL_UART_Transmit(&huart1, (uint8_t*) &data, 1, 1);
+	if(huart->Instance == USART6){
+	//	HAL_UART_Receive_IT(&huart1, (uint8_t*) &data, 2);
+		uart_buffer[uart_index++] = *RxBuf2;
+     //   uart_buffer[uart_index] = '\0';
+		 if(*RxBuf2 == '\n') {
+            char sr = '\r';
+		HAL_UART_Transmit_IT(&huart1, (uint8_t*) RxBuf2, 1);
 		HAL_GPIO_TogglePin(GPIOB,LED1_Pin);
+	 }
 	}
 	
 }
+#else
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
+	flag_rx = 1;
+	   if(huart->Instance == huart1.Instance){
+			HAL_UART_Receive_IT(&huart1,rxBuf,5);
+		    *rxBuf =0;
+				HAL_GPIO_TogglePin(GPIOB,LED1_Pin);
+	   }
+}
+
+#endif
+
 
 /* USER CODE END 0 */
 
@@ -155,6 +181,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
 int main(void)
 {
   /* USER CODE BEGIN 1 */
+	 //char *test ="AT\r\n";
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -179,11 +206,17 @@ int main(void)
   MX_USART2_UART_Init();
   MX_USART6_UART_Init();
   /* USER CODE BEGIN 2 */
+  HAL_GPIO_WritePin(W_RST_GPIO_Port,W_RST_Pin,0);
+  HAL_Delay(1000);
+  HAL_GPIO_WritePin(W_RST_GPIO_Port,W_RST_Pin,1);
+  
   HAL_NVIC_EnableIRQ(USART1_IRQn);
   HAL_NVIC_EnableIRQ(USART6_IRQn);
-  HAL_UART_Receive_IT(&huart1,&data,1);
-//  HAL_UART_Receive_IT(&huart6,&data,1);
-  printf("TEST\r\n");
+  HAL_UART_Receive_IT(&huart1,(uint8_t*)RxBuf1,1);
+  HAL_UART_Receive_IT(&huart6,(uint8_t*)RxBuf2,1);
+//  printf("AT\r\n");
+//  
+//  HAL_UART_Transmit(&huart6, (uint8_t *)&test, 4, 0xFFFF);
   HAL_GPIO_TogglePin(GPIOB,LED0_Pin);
 
   /* USER CODE END 2 */
@@ -194,7 +227,13 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-
+	if(flag_rx)
+	{
+//		HAL_UART_Receive_IT(&huart1,rxBuf,5);
+		flag_rx =0;
+		HAL_UART_Transmit_IT(&huart1,rxBuf,5);
+}
+//	HAL_UART_Transmit_IT(&huart1,rxBuf,5);
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
@@ -408,3 +447,4 @@ void assert_failed(uint8_t *file, uint32_t line)
 #endif /* USE_FULL_ASSERT */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
+
