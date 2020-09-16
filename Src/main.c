@@ -143,8 +143,13 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
 			 if(size <0)
 				  size= UART_RX_BUF_SIZE-uart_hal_rx.i_p;
       //for(i = 0;i<size;i++){
+
       HAL_UART_Transmit_IT(&huart1, &uart_hal_rx.buffer[uart_hal_rx.o_p], size);
-     // uart_hal_rx.o_p>
+      uart_hal_rx.o_p+=size;
+      if(uart_hal_rx.o_p >=UART_RX_BUF_SIZE)
+      {
+        uart_hal_rx.o_p=0;
+      }
 
       // uart_hal_rx.o_p+size;
       // if(uart_hal_rx.o_p >=UART_RX_BUF_SIZE)
