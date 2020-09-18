@@ -65,7 +65,9 @@ void Error_Handler(void);
 #define LED1_Pin GPIO_PIN_6
 #define LED1_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
-
+void UART1_enqueue(char data);
+void UART2_enqueue(char data);
+void UART6_enqueue(char data);
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

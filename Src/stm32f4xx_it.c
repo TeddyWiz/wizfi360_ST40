@@ -57,13 +57,14 @@
 
 /* External variables --------------------------------------------------------*/
 extern UART_HandleTypeDef huart1;
+extern UART_HandleTypeDef huart2;
 extern UART_HandleTypeDef huart6;
 /* USER CODE BEGIN EV */
 
 /* USER CODE END EV */
 
 /******************************************************************************/
-/*           Cortex-M4 Processor Interruption and Exception Handlers          */ 
+/*           Cortex-M4 Processor Interruption and Exception Handlers          */
 /******************************************************************************/
 /**
   * @brief This function handles Non maskable interrupt.
@@ -204,7 +205,13 @@ void SysTick_Handler(void)
 void USART1_IRQHandler(void)
 {
   /* USER CODE BEGIN USART1_IRQn 0 */
-
+  #if 1
+	  if((__HAL_UART_GET_FLAG(&huart1, UART_FLAG_RXNE) != RESET))
+	  {
+		  UART1_enqueue((char)(huart1.Instance->RDR & (uint8_t)0x00FF));
+	  }
+	  __HAL_UART_CLEAR_PEFLAG(&huart1);
+	#endif
   /* USER CODE END USART1_IRQn 0 */
   HAL_UART_IRQHandler(&huart1);
   /* USER CODE BEGIN USART1_IRQn 1 */
@@ -213,11 +220,39 @@ void USART1_IRQHandler(void)
 }
 
 /**
+  * @brief This function handles USART2 global interrupt.
+  */
+void USART2_IRQHandler(void)
+{
+  /* USER CODE BEGIN USART2_IRQn 0 */
+  #if 1
+	  if((__HAL_UART_GET_FLAG(&huart2, UART_FLAG_RXNE) != RESET))
+	  {
+		  UART2_enqueue((char)(huart2.Instance->RDR & (uint8_t)0x00FF));
+	  }
+	  __HAL_UART_CLEAR_PEFLAG(&huart2);
+	#endif
+
+  /* USER CODE END USART2_IRQn 0 */
+  HAL_UART_IRQHandler(&huart2);
+  /* USER CODE BEGIN USART2_IRQn 1 */
+
+  /* USER CODE END USART2_IRQn 1 */
+}
+
+/**
   * @brief This function handles USART6 global interrupt.
   */
 void USART6_IRQHandler(void)
 {
   /* USER CODE BEGIN USART6_IRQn 0 */
+  #if 1
+	  if((__HAL_UART_GET_FLAG(&huart6, UART_FLAG_RXNE) != RESET))
+	  {
+		  UART6_enqueue((char)(huart6.Instance->RDR & (uint8_t)0x00FF));
+	  }
+	  __HAL_UART_CLEAR_PEFLAG(&huart6);
+	#endif
 
   /* USER CODE END USART6_IRQn 0 */
   HAL_UART_IRQHandler(&huart6);
