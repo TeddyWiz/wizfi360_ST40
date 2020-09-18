@@ -71,7 +71,7 @@ static void MX_USART6_UART_Init(void);
     PUTCHAR_PROTOTYPE
     {
 //	  HAL_UART_Transmit(&huart6, (uint8_t *)&ch, 1, 0xFFFF);
-	  HAL_UART_Transmit(&huart6, (uint8_t *)&ch, 1, 0xFFFF);
+	  HAL_UART_Transmit(&huart1, (uint8_t *)&ch, 1, 0xFFFF);
       return ch;
     }
 	
@@ -121,6 +121,7 @@ uart_rx_type uart_hal_rx;
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+#if 0
 void uart_hal_rx_buffer_init(void)
 {
   uart_hal_rx.i_p = 0;
@@ -178,7 +179,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
 }
 
 #endif
-
+#endif
 
 /* USER CODE END 0 */
 
@@ -190,6 +191,13 @@ int main(void)
 {
   /* USER CODE BEGIN 1 */
 	 //char *test ="AT\r\n";
+   int Rst_01 = 0;
+   int Rst_02 = 0;
+   int Rst_06 = 0;
+   char *RT_Data_01 = NULL;
+   char *RT_Data_02 = NULL;
+   char *RT_Data_06 = NULL;
+   char Temp = 0;
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -222,6 +230,8 @@ int main(void)
   HAL_NVIC_EnableIRQ(USART6_IRQn);
   HAL_UART_Receive_IT(&huart1,&uart_hal_rx.temp,1);
   HAL_UART_Receive_IT(&huart6,&uart_hal_rx.temp,1);
+  HAL_UART_Receive_IT(&huart2,&uart_hal_rx.temp,1);
+  #if 0 //teddy 200918
   uart_hal_rx_buffer_init();
   printf("AT+GMR\r\n");
   HAL_Delay(1000);
@@ -236,11 +246,15 @@ int main(void)
   HAL_Delay(5000);
   printf("AT+CIPSTART=\"TCP\",\"192.168.0.9\",5000 \r\n");
   HAL_Delay(1000);
+  #endif
 
 //  
 //  HAL_UART_Transmit(&huart6, (uint8_t *)&test, 4, 0xFFFF);
-  HAL_GPIO_TogglePin(GPIOB,LED0_Pin);
 
+  printf("-------------------------\r\n");
+  printf("  Test Program \r\n");
+  printf("-------------------------\r\n");
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, 0);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -248,6 +262,46 @@ int main(void)
 
   while (1)
   {
+    if(UART_1.flag ==1) // debug port
+    {
+      Rst_01 = COM_Find_Words(&UART_1, "\r", 1, &RT_Data_01);
+      if(Rst_01 > 0)
+      {
+        UART_1.flag = 0;
+        HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_SET);
+        HAL_Delay(100);
+        HAL_UART_Transmit_IT(&huart2, RT_Data_01, Rst_01);
+        HAL_UART_Transmit_IT(&huart1, RT_Data_01, Rst_01);
+        HAL_Delay(100);
+        free(RT_Data_01);
+        RT_Data_01 = NULL;
+        HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_RESET);
+      }
+    }
+    if(UART_2.flag ==1) // 
+    {
+      #if 1 
+      while(COM_Buffer_Empty(&UART_2) != 1)
+      {
+        Temp = COM_Dequeue(&UART_2);
+        HAL_UART_Transmit_IT(&huart1, &Temp, 1);
+      }
+      UART_2.flag = 0;
+      #else
+      Rst_02 = COM_Find_Words(&UART_2, "\r", 1, &RT_Data_02);
+      if(Rst_02 > 0)
+      {
+        UART_2.flag = 0;
+        HAL_UART_Transmit_IT(&huart1, RT_Data_02, Rst_02);
+        free(RT_Data_02);
+        RT_Data_02 = NULL;
+      }
+      #endif
+    }
+    if(UART_6.flag ==1) //wizfi360
+    {
+      //
+    }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -353,7 +407,7 @@ static void MX_USART2_UART_Init(void)
   huart2.Init.StopBits = UART_STOPBITS_1;
   huart2.Init.Parity = UART_PARITY_NONE;
   huart2.Init.Mode = UART_MODE_TX_RX;
-  huart2.Init.HwFlowCtl = UART_HWCONTROL_RTS;
+  huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
   huart2.Init.OverSampling = UART_OVERSAMPLING_16;
   if (HAL_UART_Init(&huart2) != HAL_OK)
   {
@@ -413,7 +467,17 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, LED0_Pin|LED1_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin : PA1 */
+  GPIO_InitStruct.Pin = GPIO_PIN_1;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pin : W_RST_Pin */
   GPIO_InitStruct.Pin = W_RST_Pin;

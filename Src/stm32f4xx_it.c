@@ -208,7 +208,7 @@ void USART1_IRQHandler(void)
   #if 1
 	  if((__HAL_UART_GET_FLAG(&huart1, UART_FLAG_RXNE) != RESET))
 	  {
-		  UART1_enqueue((char)(huart1.Instance->RDR & (uint8_t)0x00FF));
+		  UART1_enqueue((char)(huart1.Instance->DR & (uint8_t)0x00FF));
 	  }
 	  __HAL_UART_CLEAR_PEFLAG(&huart1);
 	#endif
@@ -228,7 +228,7 @@ void USART2_IRQHandler(void)
   #if 1
 	  if((__HAL_UART_GET_FLAG(&huart2, UART_FLAG_RXNE) != RESET))
 	  {
-		  UART2_enqueue((char)(huart2.Instance->RDR & (uint8_t)0x00FF));
+		  UART2_enqueue((char)(huart2.Instance->DR & (uint8_t)0x00FF));
 	  }
 	  __HAL_UART_CLEAR_PEFLAG(&huart2);
 	#endif
@@ -249,7 +249,7 @@ void USART6_IRQHandler(void)
   #if 1
 	  if((__HAL_UART_GET_FLAG(&huart6, UART_FLAG_RXNE) != RESET))
 	  {
-		  UART6_enqueue((char)(huart6.Instance->RDR & (uint8_t)0x00FF));
+		  UART6_enqueue((char)(huart6.Instance->DR & (uint8_t)0x00FF));
 	  }
 	  __HAL_UART_CLEAR_PEFLAG(&huart6);
 	#endif
